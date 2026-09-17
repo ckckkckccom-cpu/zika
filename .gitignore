@@ -1,0 +1,14 @@
+# 砌出嚟嘅嘢唔使入 git —— GitHub Actions 每次會自己砌返
+site/
+DEMO.html
+字卡.pdf
+*.pdf
+
+# Python 雜物
+__pycache__/
+*.pyc
+.venv/
+
+# 系統雜物
+.DS_Store
+Thumbs.db

@@ -1,0 +1,89 @@
+name: 字卡自動砌 PDF 同網頁
+
+# 幾時跑：
+#  1. 每次有人改咗字卡（.md）或者字形圖，push 上 main
+#  2. 喺 GitHub 網頁手動撳掣（workflow_dispatch）
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.md'
+      - 'img/**'
+      - 'fonts/**'
+      - '*.py'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+
+# 出 GitHub Pages 需要嘅權限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一時間只跑一個，遲嘅等先嗰個完
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 攞 repo 落嚟
+        uses: actions/checkout@v4
+
+      - name: 裝 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: 裝 Python 套件
+        run: pip install -r requirements.txt
+
+      - name: 裝 Chromium（出 PDF 用）
+        run: python -m playwright install --with-deps chromium
+
+      - name: 裝花園明朝（罕見字用）
+        # NotoSansTC 係繁體常用字子集，唔覆蓋 CJK 擴展區。
+        # 說文引文入面嘅古字（㣇 𩫚 𩫕…）同 IPA 上古音符號（ɢʷɯlʔ）要靠佢。
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq fonts-hanazono
+
+      - name: 檢查每隻字都畫得出
+        # 字型冇某隻字唔會報錯，只會靜靜哋出豆腐格。呢步喺砌之前先捉。
+        run: python check_glyphs.py
+
+      - name: 整 PDF 專用 TrueType 字型
+        # Chromium 出 PDF 唔食 CFF/OTF 字型，中文會全部唔見。
+        # 呢步將字型轉成 TrueType 再裝落系統。詳情見 make_pdf_font.py。
+        run: |
+          python make_pdf_font.py
+          fc-cache -f ~/.local/share/fonts
+          fc-list | grep -iE "TCPdf|ZikaRare"
+
+      - name: 砌 HTML
+        run: python build_demo.py
+
+      - name: 砌 PDF
+        run: python build_pdf.py site/cards.pdf
+
+      - name: 檢查 PDF 真係有中文
+        # 如果字型出事，PDF 會照出但中文全部消失。呢步係安全網：
+        # 冇中文就當失敗，唔會靜靜哋出一份爛嘢。
+        run: python check_pdf.py site/cards.pdf
+
+      - name: 上載網站
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 出街
+        id: deployment
+        uses: actions/deploy-pages@v4

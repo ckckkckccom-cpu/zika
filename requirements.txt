@@ -1,0 +1,5 @@
+markdown-it-py>=3.0
+fonttools>=4.50
+brotli>=1.1
+playwright>=1.44
+pillow>=10.0
