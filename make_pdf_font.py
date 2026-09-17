@@ -99,7 +99,7 @@ def main():
     # 罕見字（㣇 𩫚 IPA 音標…）NotoSansTC 冇，要 HanaMin 補。
     # HanaMin 本身已經係 TrueType，唔使轉輪廓，subset 完直接裝。
     import fontkit
-    _, in_a, in_b, nobody = fontkit.coverage(text)
+    _, in_a, in_b, _dv, nobody = fontkit.coverage(text)
     hana = fontkit.find_hanamin()
     for letter, chars in (('A', in_a), ('B', in_b)):
         if not chars:

@@ -16,12 +16,19 @@ import fontkit
 def main():
     text = fontkit.cards_text()
     hana = fontkit.find_hanamin()
-    prim, in_a, in_b, nobody = fontkit.coverage(text)
+    prim, in_a, in_b, in_dv, nobody = fontkit.coverage(text)
 
-    print('字卡總字元數（去重）: %d' % (len(prim) + len(in_a) + len(in_b) + len(nobody)))
+    print('字卡總字元數（去重）: %d'
+          % (len(prim) + len(in_a) + len(in_b) + len(in_dv) + len(nobody)))
     print('  NotoSansTC 畫到 : %d' % len(prim))
     print('  HanaMinA 補     : %d  %s' % (len(in_a), ''.join(sorted(in_a))[:40]))
     print('  HanaMinB 補     : %d  %s' % (len(in_b), ''.join(sorted(in_b))[:40]))
+    print('  DejaVu Sans 補  : %d  %s' % (len(in_dv), ''.join(sorted(in_dv))[:40]))
+
+    if not fontkit.find_dejavu():
+        print('\n⚠ 搵唔到 DejaVu Sans。')
+        print('  Ubuntu／Debian： sudo apt-get install -y fonts-dejavu-core')
+        print('  冇佢 ✓ ✗ 同 IPA 附加符號會變豆腐格。')
 
     if not hana:
         print('\n⚠ 搵唔到 HanaMinA/HanaMinB。')

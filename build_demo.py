@@ -66,7 +66,7 @@ def build_font_faces(text):
 
     冇 HanaMin 嘅話罕見字會變豆腐格 —— 呢度出聲，唔好靜靜哋出爛嘢。
     """
-    prim, in_a, in_b, nobody = fontkit.coverage(text)
+    prim, in_a, in_b, in_dv, nobody = fontkit.coverage(text)
     faces, stack = [], []
 
     faces.append("@font-face{font-family:'ZikaMain';src:url(data:font/woff2;base64,%s)"
@@ -88,6 +88,13 @@ def build_font_faces(text):
         print('\n⚠ 呢啲字冇任何字型畫得出，會變豆腐格: %s' % ''.join(sorted(nobody)))
         print('  跑 python3 check_glyphs.py 睇詳情')
 
+    if in_dv:
+        print('   符號交俾 DejaVu Sans: %d 個  %s'
+              % (len(in_dv), ''.join(sorted(in_dv))[:30]))
+
+    # DejaVu Sans 唔內嵌（純西文字型，本機／瀏覽器一般都有），
+    # 但一定要留喺 stack 尾，否則 ✓ ✗ 同 IPA 附加符號會變豆腐格。
+    stack.append("'DejaVu Sans'")
     stack.append('sans-serif')
     return '\n'.join(faces), ','.join(stack)
 

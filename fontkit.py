@@ -29,6 +29,27 @@ HANAMIN_DIRS = [
 ]
 
 
+# DejaVu Sans —— 純西文／符號字型，喺 PDF 同 HTML 嘅 fallback stack 最尾
+# （見 build_pdf.py 嘅 PRINT_CSS，同 CLAUDE.md「四個已知字型坑」第 3 條）。
+# 佢負責 NotoSansTC 同 HanaMin 都冇嘅符號，例如 ✓ ✗ ○ 同 IPA 附加符號
+# （上古音構擬會用到 n̥ 咁嘅組合符號 U+0325）。呢度要檢查佢，
+# 否則 check_glyphs.py 會就住呢啲字報假警。
+DEJAVU_PATHS = [
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    '/usr/share/fonts/TTF/DejaVuSans.ttf',
+    '/Library/Fonts/DejaVuSans.ttf',
+    os.path.join(ROOT, 'fonts', 'DejaVuSans.ttf'),
+]
+
+
+def find_dejavu():
+    """搵 DejaVu Sans，搵唔到回傳 None。"""
+    for p in DEJAVU_PATHS:
+        if os.path.exists(p):
+            return p
+    return None
+
+
 def find_hanamin():
     """搵 HanaMinA / HanaMinB，回傳 {'A': path, 'B': path}，搵唔到就唔放入去。"""
     out = {}
@@ -63,7 +84,10 @@ def cards_text(root=ROOT):
 def coverage(text):
     """將每個字元分去邊隻字型負責。
 
-    回傳 (primary_chars, hana_a_chars, hana_b_chars, nobody_chars)
+    回傳 (primary_chars, hana_a_chars, hana_b_chars, dejavu_chars, nobody_chars)
+
+    次序同 render 時嘅 fallback stack 一樣：
+    NotoSansTC → HanaMinA → HanaMinB → DejaVu Sans。
     """
     from fontTools.ttLib import TTFont
 
@@ -75,7 +99,10 @@ def coverage(text):
     for letter, path in hana.items():
         cmaps[letter] = set(TTFont(path).getBestCmap())
 
-    in_primary, in_a, in_b, nobody = set(), set(), set(), set()
+    dv = find_dejavu()
+    dv_cmap = set(TTFont(dv).getBestCmap()) if dv else set()
+
+    in_primary, in_a, in_b, in_dv, nobody = set(), set(), set(), set(), set()
     for c in chars:
         cp = ord(c)
         if cp in prim:
@@ -84,6 +111,8 @@ def coverage(text):
             in_a.add(c)
         elif 'B' in cmaps and cp in cmaps['B']:
             in_b.add(c)
+        elif cp in dv_cmap:
+            in_dv.add(c)
         else:
             nobody.add(c)
-    return in_primary, in_a, in_b, nobody
+    return in_primary, in_a, in_b, in_dv, nobody
