@@ -114,9 +114,16 @@ python check_glyphs.py     # 先檢查每隻字都有字型畫得出
 python make_pdf_font.py    # 整 PDF 專用字型（加咗新字要重跑）
 fc-cache -f ~/.local/share/fonts
 python build_demo.py       # 出 HTML（可以跟字名，例如 build_demo.py 偉 家）
-python build_pdf.py site/cards.pdf
-python check_pdf.py site/cards.pdf     # 驗證 PDF 真係有中文
+                           #   合訂本 → DEMO.html、site/index.html
+                           #   每隻字 → site/cards/<字>.html
+python build_pdf.py 字卡.pdf          # 合訂本 PDF
+python build_pdf.py --each pdf        # 每隻字一份 → pdf/<字>.pdf
+python check_pdf.py 字卡.pdf pdf/*.pdf  # 驗證每份 PDF 真係有中文
 ```
+
+**兩種 PDF 都要出**：`字卡.pdf` 係合訂本，`pdf/<字>.pdf` 係每隻字一份（方便單獨睇、
+打印、send 俾人）。兩樣都 commit 入 repo，GitHub Actions 會自動更新。
+刪咗一張卡之後，CI 會 `rm -rf pdf` 再砌返，唔會留低孤兒 PDF。
 
 要裝一次：`sudo apt-get install -y fonts-hanazono`（罕見字用）
 

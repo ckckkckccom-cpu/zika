@@ -2,10 +2,13 @@
 site/
 DEMO.html
 
-# 例外：字卡.pdf 係成品，要 commit 入 repo，
+# 例外：PDF 係成品，要 commit 入 repo，
 # 因為 Private repo 用唔到免費 GitHub Pages，要靠喺 GitHub 直接開個檔嚟睇。
-# GitHub Actions 會自動更新佢。
+# GitHub Actions 會自動更新佢哋。
+#   字卡.pdf      —— 合訂本
+#   pdf/<字>.pdf  —— 每隻字一份
 !字卡.pdf
+!pdf/
 
 # Python 雜物
 __pycache__/

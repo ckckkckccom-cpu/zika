@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
-"""將字卡 Markdown 砌成單一自足 HTML：圖片 base64 內嵌，CJK 字型 subset 內嵌。
+"""將字卡 Markdown 砌成自足 HTML：圖片 base64 內嵌，CJK 字型 subset 內嵌。
 
-用法：python3 build_demo.py [字1 字2 ...]      # 預設做晒所有卡
+出兩種嘢：
+  1. **合訂本** —— DEMO.html（本機睇）同 site/index.html，所有卡砌埋一份
+  2. **每隻字一份** —— site/cards/<字>.html，之後 build_pdf.py --each 會逐份出 PDF
+
+用法：
+  python3 build_demo.py              # 做晒所有卡
+  python3 build_demo.py 靜 偉        # 淨係做呢兩張
+  python3 build_demo.py --no-each    # 淨係出合訂本，唔出單張
 """
 import base64
 import io
@@ -17,6 +24,7 @@ import fontkit
 ROOT = fontkit.ROOT
 FONT = fontkit.PRIMARY
 SITE = os.path.join(ROOT, 'site')
+CARDS = os.path.join(SITE, 'cards')     # 每隻字一份 HTML，俾 build_pdf.py --each 用
 
 
 def embed_images(html):
@@ -118,46 +126,81 @@ hr{border:none;border-top:1px solid var(--line);margin:2.5em 0}
 """
 
 
+def render_card(md, ch):
+    """讀 <字>.md，render 成 <section>。回傳 (原文, section html, 壞連結)。"""
+    path = os.path.join(ROOT, '%s.md' % ch)
+    if not os.path.exists(path):
+        return None
+    src = open(path, encoding='utf-8').read()
+    html, bad = embed_images(md.render(src))
+    return src, '<section id="c%s">%s</section>' % (ord(ch), html), bad
+
+
+def build_page(chars, sections, text, title, with_nav=True):
+    """砌一份自足 HTML。字型淨係 subset 呢一頁用到嘅字。"""
+    faces, stack = build_font_faces(text)
+    nav = ''
+    if with_nav and len(chars) > 1:
+        nav = '<nav>%s</nav>' % ''.join(
+            '<a href="#c%s">%s</a>' % (ord(c), c) for c in chars)
+    return """<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>%s</title>
+<style>%s
+%s</style></head><body><div id="wrap">
+%s%s</div></body></html>""" % (
+        title, faces, CSS.replace('__STACK__', stack), nav, ''.join(sections))
+
+
+def write(dest, html):
+    os.makedirs(os.path.dirname(dest) or '.', exist_ok=True)
+    open(dest, 'w', encoding='utf-8').write(html)
+    print('出咗: %s  (%.1f MB)' % (dest, os.path.getsize(dest) / 1e6))
+
+
+# 砌頁面本身會用到、但可能唔喺任何一張卡入面嘅字
+EXTRA = '字卡索引結構意思同音交叉核對'
+
+
 def main():
-    chars = sys.argv[1:] or fontkit.card_files(ROOT)
+    args = sys.argv[1:]
+    each = '--no-each' not in args
+    chars = [a for a in args if not a.startswith('--')] or fontkit.card_files(ROOT)
+
     md = MarkdownIt('commonmark', {'html': True}).enable('table').enable('strikethrough')
 
-    body, nav, alltext, allbad = [], [], [], []
+    done, srcs, sections, allbad = [], [], [], []
     for ch in chars:
-        p = os.path.join(ROOT, '%s.md' % ch)
-        if not os.path.exists(p):
+        got = render_card(md, ch)
+        if got is None:
             print('跳過（冇此卡）:', ch)
             continue
-        src = open(p, encoding='utf-8').read()
-        alltext.append(src)
-        html = md.render(src)
-        html, bad = embed_images(html)
+        src, section, bad = got
+        done.append(ch)
+        srcs.append(src)
+        sections.append(section)
         allbad += bad
-        nav.append('<a href="#c%s">%s</a>' % (ord(ch), ch))
-        body.append('<section id="c%s">%s</section>' % (ord(ch), html))
-        print('✓ %s  （%d 張圖內嵌）' % (ch, html.count('data:image/png')))
+        print('✓ %s  （%d 張圖內嵌）' % (ch, section.count('data:image/png')))
 
     if allbad:
         print('\n❌ 壞連結:', allbad)
+    if not done:
+        sys.exit('一張卡都砌唔到')
 
-    text = ''.join(alltext) + ''.join(chars) + '字卡索引結構意思同音交叉核對'
-    print('\nsubset 字型中…')
-    faces, stack = build_font_faces(text)
+    # 1. 合訂本
+    print('\n── 合訂本 ──')
+    page = build_page(done, sections, ''.join(srcs) + ''.join(done) + EXTRA,
+                      '字卡 — %s' % '、'.join(done))
+    write(os.path.join(ROOT, 'DEMO.html'), page)        # 本機睇
+    write(os.path.join(SITE, 'index.html'), page)       # GitHub Pages 睇
 
-    out = """<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>字卡 — %s</title>
-<style>%s
-%s</style></head><body><div id="wrap">
-<nav>%s</nav>%s</div></body></html>""" % (
-        '、'.join(chars), faces, CSS.replace('__STACK__', stack),
-        ''.join(nav), ''.join(body))
-
-    os.makedirs(SITE, exist_ok=True)
-    for dest in (os.path.join(ROOT, 'DEMO.html'),     # 本機睇
-                 os.path.join(SITE, 'index.html')):   # GitHub Pages 睇
-        open(dest, 'w', encoding='utf-8').write(out)
-        print('\n出咗: %s  (%.1f MB)' % (dest, os.path.getsize(dest) / 1e6))
+    # 2. 每隻字一份（build_pdf.py --each 會攞呢啲去出單字 PDF）
+    if each:
+        print('\n── 每隻字一份 ──')
+        for ch, src, section in zip(done, srcs, sections):
+            one = build_page([ch], [section], src + ch + EXTRA,
+                             '字卡 — %s' % ch, with_nav=False)
+            write(os.path.join(CARDS, '%s.html' % ch), one)
 
 
 if __name__ == '__main__':

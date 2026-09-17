@@ -5,9 +5,11 @@
 頁數、圖片全部喺度，但中文一個字都冇。唔檢查就會靜靜哋出爛嘢。
 呢個 script 讀 PDF 嘅 ToUnicode 表，數返有幾多個中日韓字。
 
-用法：python3 check_pdf.py site/cards.pdf
+用法：python3 check_pdf.py 字卡.pdf
+      python3 check_pdf.py pdf/*.pdf      # 一次過驗晒每隻字嗰份
 出事會 exit code 1，令 GitHub Actions 標紅。
 """
+import os
 import re
 import sys
 import zlib
@@ -46,11 +48,9 @@ def _codepoints(hexbytes):
     return [int(u[i:i + 4], 16) for i in range(0, len(u), 4)]
 
 
-def main():
-    path = sys.argv[1] if len(sys.argv) > 1 else 'site/cards.pdf'
+def check_one(path):
+    """驗一份。冇問題回傳 True。"""
     cjk, size = cjk_in_pdf(path)
-    print('%s — %.2f MB，中文字數 %d' % (path, size / 1e6, len(cjk)))
-
     problems = []
     if len(cjk) < MIN_CJK:
         problems.append('中文字數得 %d 個（應該最少 %d）—— 字型好可能冇嵌入'
@@ -59,14 +59,26 @@ def main():
     if missing:
         problems.append('缺咗呢啲常用字：%s' % ''.join(missing))
 
-    if problems:
-        print('\n✗ PDF 有問題：')
-        for p in problems:
-            print('  -', p)
-        print('\n多數係字型問題。睇 make_pdf_font.py 開頭嘅解釋。')
+    print('%s — %.2f MB，中文字數 %d  %s'
+          % (path, size / 1e6, len(cjk), '✓' if not problems else '✗'))
+    for p in problems:
+        print('    -', p)
+    return not problems
+
+
+def main():
+    paths = sys.argv[1:] or ['字卡.pdf']
+    missing = [p for p in paths if not os.path.exists(p)]
+    if missing:
+        print('✗ 搵唔到：%s' % '、'.join(missing))
+        return 1
+    bad = [p for p in paths if not check_one(p)]
+    if bad:
+        print('\n✗ %d／%d 份 PDF 有問題：%s' % (len(bad), len(paths), '、'.join(bad)))
+        print('多數係字型問題。睇 make_pdf_font.py 開頭嘅解釋。')
         return 1
 
-    print('✓ PDF 正常')
+    print('\n✓ %d 份 PDF 全部正常' % len(paths))
     return 0
 
 
