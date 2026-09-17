@@ -1,8 +1,11 @@
-name: 字卡自動砌 PDF 同網頁
+name: 自動砌字卡 PDF
 
 # 幾時跑：
-#  1. 每次有人改咗字卡（.md）或者字形圖，push 上 main
+#  1. 有人改咗字卡（.md）或者字形圖，push 上 main
 #  2. 喺 GitHub 網頁手動撳掣（workflow_dispatch）
+#
+# 做完會將砌好嘅 字卡.pdf 直接 commit 返入 repo，
+# 咁 Private repo 都唔使開 GitHub Pages（Pages 喺 Private repo 要付費版）。
 on:
   push:
     branches: [main]
@@ -11,18 +14,15 @@ on:
       - 'img/**'
       - 'fonts/**'
       - '*.py'
+      - 'requirements.txt'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
-# 出 GitHub Pages 需要嘅權限
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write        # 要寫返個 PDF 入 repo
 
-# 同一時間只跑一個，遲嘅等先嗰個完
 concurrency:
-  group: pages
+  group: build-pdf
   cancel-in-progress: false
 
 jobs:
@@ -65,25 +65,33 @@ jobs:
         run: python build_demo.py
 
       - name: 砌 PDF
-        run: python build_pdf.py site/cards.pdf
+        run: python build_pdf.py 字卡.pdf
 
       - name: 檢查 PDF 真係有中文
         # 如果字型出事，PDF 會照出但中文全部消失。呢步係安全網：
         # 冇中文就當失敗，唔會靜靜哋出一份爛嘢。
-        run: python check_pdf.py site/cards.pdf
+        run: python check_pdf.py 字卡.pdf
 
-      - name: 上載網站
-        uses: actions/upload-pages-artifact@v3
+      - name: 將 PDF commit 返入 repo
+        # [skip ci] 係為咗唔好觸發返自己（無限迴圈）。
+        # 個 PDF 唔喺上面 paths 清單度，本身已經唔會觸發，呢個係雙重保險。
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f 字卡.pdf
+          if git diff --staged --quiet; then
+            echo "PDF 冇變，唔使 commit"
+          else
+            git commit -m "自動更新字卡 PDF [skip ci]"
+            git push
+            echo "PDF 已更新"
+          fi
+
+      - name: 另存一份做 artifact
+        # 除咗 repo 入面嗰份，Actions 呢度都留一份（90 日）。
+        # 萬一 commit 嗰步出事，喺呢度都download 到。
+        uses: actions/upload-artifact@v4
         with:
-          path: site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: 出街
-        id: deployment
-        uses: actions/deploy-pages@v4
+          name: 字卡PDF
+          path: 字卡.pdf
+          retention-days: 90
