@@ -27,7 +27,7 @@ import localserver
 ROOT = fontkit.ROOT
 SITE = os.path.join(ROOT, 'site')
 WIDTHS = [('phone', 390, 844), ('desktop', 1280, 900)]
-MIN_FONT_PX = 20.0
+MIN_FONT_PX = 17.0
 
 
 EAGER = """async () => {

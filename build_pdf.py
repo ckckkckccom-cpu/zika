@@ -52,8 +52,9 @@ th,td{padding:3px 5px;word-wrap:break-word;overflow-wrap:anywhere}
 tr{page-break-inside:avoid}
 thead{display:table-header-group}
 td img{max-height:70px}
-.strip{flex-wrap:wrap;overflow:visible}
-.strip img{height:64px}
+.strip{max-width:none;grid-template-columns:repeat(7,1fr);gap:4px}
+.strip img{height:56px}
+.strip figcaption{font-size:7pt}
 /* 幅圖好高。唔夾住高度嘅話，佢會頂到成頁都放唔落，
    結果彈去下一頁，第一頁得個大字同一句總結，中間一大片空白。 */
 .net{page-break-inside:avoid;border:none;padding:0;text-align:center}

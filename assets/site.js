@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  var SIZES = ['20px', '24px', '28px'];
+  var SIZES = ['17px', '20px', '24px', '28px'];
   var KEY = 'zika-fs';
 
   /* ── 字體大小 ── */
