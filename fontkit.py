@@ -73,12 +73,35 @@ def card_files(root=ROOT):
 
 
 def cards_text(root=ROOT):
-    """所有字卡用到嘅字元。"""
+    """所有字卡用到嘅字元，連網站介面文字。
+
+    介面文字（「上一字」「放大字體」…）好多時唔喺任何一張卡入面。
+    如果唔加入 subset 範圍，佢哋喺網頁同 PDF 都會變豆腐格，而且唔會報錯。
+    單一來源喺 ui_strings.py。
+    """
+    import ui_strings
     t = ''
     for name in card_files(root):
         t += open(os.path.join(root, name + '.md'), encoding='utf-8').read()
-    # 砌頁面時額外會用到嘅字
-    return t + '0123456789一二三四五六七八九十／・字卡索引結構意思同音交叉核對'
+    return t + ui_strings.ALL_TEXT
+
+
+def subset_bytes(path, text, flavor='woff2'):
+    """只留實際用到嘅字，令字型由幾 MB 縮到幾百 KB。回傳 bytes。"""
+    import io
+    from fontTools import subset
+    opts = subset.Options()
+    opts.flavor = flavor
+    opts.desubroutinize = True
+    opts.ignore_missing_glyphs = True
+    font = subset.load_font(path, opts)
+    sub = subset.Subsetter(options=opts)
+    sub.populate(text=text)
+    sub.subset(font)
+    buf = io.BytesIO()
+    font.flavor = flavor
+    font.save(buf)
+    return buf.getvalue()
 
 
 def coverage(text):
