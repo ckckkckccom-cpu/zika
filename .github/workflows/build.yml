@@ -1,15 +1,16 @@
-name: 自動砌字卡 PDF
+name: 砌網站同 PDF
 
 # 幾時跑：
-#  1. 有人改咗字卡（.md）或者字形圖，push 上 main
+#  1. 有人改咗字卡（.md）、字形圖、樣式或者程式，push 上 main
 #  2. 喺 GitHub 網頁手動撳掣（workflow_dispatch）
 #
-# 做完會將砌好嘅 PDF 直接 commit 返入 repo，
-# 咁 Private repo 都唔使開 GitHub Pages（Pages 喺 Private repo 要付費版）。
+# 做兩件事：
+#   build  —— 砌網站（site/）同 PDF，檢查，PDF commit 返入 repo
+#   deploy —— 將 site/ 發佈去 GitHub Pages
 #
-# 出兩種 PDF：
-#   字卡.pdf      —— 合訂本，所有卡一份
-#   pdf/<字>.pdf  —— 每隻字一份，方便單獨睇／打印／send 俾人
+# ⚠️ 第一次要喺 Settings → Pages → Source 揀「GitHub Actions」，
+#    Actions 自己開唔到。未開之前 deploy 嗰步會紅色，build 照樣成功。
+#    詳情見 SETUP.md 第 6 部分。
 on:
   push:
     branches: [main]
@@ -17,21 +18,21 @@ on:
       - '**.md'
       - 'img/**'
       - 'fonts/**'
+      - 'assets/**'
       - '*.py'
       - 'requirements.txt'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
-permissions:
-  contents: write        # 要寫返個 PDF 入 repo
-
 concurrency:
-  group: build-pdf
+  group: build-site
   cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # 要寫返個 PDF 入 repo
     steps:
       - name: 攞 repo 落嚟
         uses: actions/checkout@v4
@@ -45,7 +46,7 @@ jobs:
       - name: 裝 Python 套件
         run: pip install -r requirements.txt
 
-      - name: 裝 Chromium（出 PDF 用）
+      - name: 裝 Chromium（出 PDF 同檢查網站用）
         run: python -m playwright install --with-deps chromium
 
       - name: 裝花園明朝（罕見字用）
@@ -59,34 +60,52 @@ jobs:
 
       - name: 整 PDF 專用 TrueType 字型
         # Chromium 出 PDF 唔食 CFF/OTF 字型，中文會全部唔見。
-        # 呢步將字型轉成 TrueType 再裝落系統。詳情見 make_pdf_font.py。
         run: |
           python make_pdf_font.py
           fc-cache -f ~/.local/share/fonts
           fc-list | grep -iE "TCPdf|ZikaRare"
 
-      - name: 砌 HTML
-        run: python build_demo.py
+      - name: 砌網站
+        run: python build_site.py
 
       - name: 砌合訂本 PDF
         run: python build_pdf.py 字卡.pdf
 
       - name: 砌每隻字一份 PDF
-        # 出去 pdf/<字>.pdf。舊嘅字卡刪咗之後，個 PDF 唔會自己消失，
-        # 所以先清空成個資料夾再砌返。
+        # 舊嘅字卡刪咗之後個 PDF 唔會自己消失，所以先清空再砌返。
         run: |
           rm -rf pdf
           python build_pdf.py --each pdf
 
       - name: 檢查每份 PDF 真係有中文
-        # 如果字型出事，PDF 會照出但中文全部消失。呢步係安全網：
-        # 冇中文就當失敗，唔會靜靜哋出一份爛嘢。合訂本同單張都要驗。
+        # 字型出事嘅話，PDF 會照出但中文全部消失。呢步係安全網。
         run: python check_pdf.py 字卡.pdf pdf/*.pdf
 
+      - name: 再砌一次網站
+        # 第一次砌嗰陣，新字卡嘅 PDF 仲未出，所以頁面上冇下載連結。
+        # 出完 PDF 再砌多次，連結同 site/pdf/ 就一定對得齊。
+        run: python build_site.py
+
+      - name: 用瀏覽器逐頁檢查網站
+        # 手機闊度同電腦闊度各行一次：字級、橫向溢出、字型、圖、console 錯。
+        run: python check_site.py --shots shots
+
+      - name: 留低截圖（出事嗰陣好用）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 網站截圖
+          path: shots/
+          retention-days: 30
+
+      - name: 打包網站俾 Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
       - name: 將 PDF commit 返入 repo
-        # [skip ci] 係為咗唔好觸發返自己（無限迴圈）。
-        # 啲 PDF 唔喺上面 paths 清單度，本身已經唔會觸發，呢個係雙重保險。
-        # 用 --all 連「刪咗嘅字卡留低嘅舊 PDF」都一齊記錄低。
+        # [skip ci] 係為咗唔好觸發返自己。PDF 本身唔喺上面 paths 清單，
+        # 已經唔會觸發，呢個係雙重保險。
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -99,9 +118,7 @@ jobs:
             echo "PDF 已更新"
           fi
 
-      - name: 另存一份做 artifact
-        # 除咗 repo 入面嗰份，Actions 呢度都留一份（90 日）。
-        # 萬一 commit 嗰步出事，喺呢度都download 到。
+      - name: 另存一份 PDF 做 artifact
         uses: actions/upload-artifact@v4
         with:
           name: 字卡PDF
@@ -109,3 +126,20 @@ jobs:
             字卡.pdf
             pdf/
           retention-days: 90
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 發佈去 GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

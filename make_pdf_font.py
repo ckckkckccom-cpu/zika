@@ -114,10 +114,12 @@ def main():
         hs = subset.Subsetter(options=o2)
         hs.populate(text=''.join(chars))
         hs.subset(hf)
-        dest = os.path.join(DEST_DIR, 'ZikaRare%s-Regular.ttf' % letter)
+        dest = os.path.join(DEST_DIR, 'ZikaRare%sPdf-Regular.ttf' % letter)
         for rec in hf['name'].names:
             if rec.nameID in (1, 3, 4, 6):
-                rec.string = 'ZikaRare%s' % letter
+                # 網頁嗰邊個 @font-face 都叫 ZikaRareA／B。如果 PDF 用同一個名，
+                # 網頁嘅 woff2 會贏咗系統字型，變成靠運氣。所以加個 Pdf 後綴分開。
+                rec.string = 'ZikaRare%sPdf' % letter
         hf.save(dest)
         print('出咗: %s (%d 個罕見字)' % (dest, len(chars)))
 
