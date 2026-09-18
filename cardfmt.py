@@ -42,7 +42,8 @@ H_DETAIL = '## 詳細考證'
 # 總覽五格。次序有意思：先出結果（字典點講、部件點解、引申到咩、
 # 同音字通到咩），最後「其他結果」放交叉核對同存疑。
 # 基本資料同完整考據一律排喺後面，唔好喺最前面阻住。
-OVERVIEW_BLOCKS = ('查字典的解釋', '不同部份結構解釋', '引申義', '同音字引申', '其他結果')
+OVERVIEW_BLOCKS = ('查字典的解釋', '不同部份結構解釋', '同族字', '做部件時',
+                   '引申義', '同音字引申', '其他結果')
 
 # front matter 一定要喺檔案最頂。卡入面有好多 `---` 做分隔線，
 # 所以一定要用 \A 錨死開頭，唔可以任意搵。
@@ -62,6 +63,23 @@ class Card:
     @property
     def is_v3(self):
         return bool(self.meta)
+
+    @property
+    def format_version(self):
+        """呢張卡係邊個格式版本。
+
+        v3 喺 front matter 寫明。舊卡冇 front matter，靠有冇同音層／
+        交叉核對去判斷：有＝v2，冇＝v1。
+        版本封存（archive/<字>_v<N>.pdf）就係按呢個號碼。
+        """
+        if self.meta and self.meta.get('format'):
+            try:
+                return int(self.meta['format'])
+            except (TypeError, ValueError):
+                pass
+        _, _, detail = split_body(self.body)
+        body = detail or self.body
+        return 2 if (section_text(body, '3.1') or section_text(body, '4.4')) else 1
 
     @property
     def jyutping(self):
@@ -248,7 +266,54 @@ def validate(card):
 
     warns += _honesty_check(card)
     warns += _overview_check(card)
+    warns += _combo_check(card)
     return errs, warns
+
+
+def _combo_check(card):
+    """組合字一定要有 combo 資料（組合圖同 1.7 專章靠佢）。
+
+    獨體字冇得組合，寫 combo: {layout: 獨體} 就當交代咗。
+    """
+    out = []
+    cb = (card.meta or {}).get('combo')
+    if cb is None:
+        out.append('%s.md：front matter 冇 combo —— 組合字一定要有，'
+                   '獨體字就寫 combo: {layout: 獨體}' % card.ch)
+        return out
+    if not isinstance(cb, dict):
+        out.append('%s.md：combo 要係一個 mapping' % card.ch)
+        return out
+    if cb.get('layout') == '獨體':
+        return out
+    for k in ('layout', 'form', 'sound'):
+        if not cb.get(k):
+            out.append('%s.md：combo 缺少 %s' % (card.ch, k))
+    for axis, name in (('same_form', '同形符'), ('same_sound', '同聲符')):
+        rows = cb.get(axis) or []
+        if not rows:
+            out.append('%s.md：combo 嘅 %s（%s）一個字都冇 —— '
+                       '真係一個都搵唔到嘅話，喺 note 講明' % (card.ch, axis, name))
+            continue
+        for i, r in enumerate(rows, 1):
+            if not isinstance(r, dict) or not r.get('char') or not r.get('with'):
+                out.append('%s.md：combo %s 第 %d 項要有 char 同 with'
+                           % (card.ch, axis, i))
+    _, _, detail = split_body(card.body)
+    if not section_text(detail, '1.7'):
+        out.append('%s.md：冇「### 1.7 字族定位」—— 組合字要有呢個專章' % card.ch)
+    if not section_text(detail, '1.8'):
+        out.append('%s.md：冇「### 1.8 這個字做部件時」—— 每張卡都要有' % card.ch)
+    labels = {k for k, _ in basic_rows(card)}
+    if '部件組合' not in labels:
+        out.append('%s.md：第 0 節冇「部件組合」一行（IDS 分解式，例如 ⿰貝才）' % card.ch)
+    sec13 = section_text(detail, '1.3')
+    if sec13 and '字樣說明' not in sec13:
+        out.append('%s.md：1.3 冇引教育部「字樣說明」—— 拆法對照係重中之重' % card.ch)
+    if not cb.get('downstream'):
+        out.append('%s.md：combo 冇 downstream —— 呢隻字做部件時去咗邊，'
+                   '一個都冇都要寫明 count: 0' % card.ch)
+    return out
 
 
 def _honesty_check(card):

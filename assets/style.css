@@ -60,6 +60,7 @@ body {
 .btn:hover, .btn:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
 .btn[aria-disabled="true"] { opacity: .35; pointer-events: none; }
 .btn-home { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-old { font-weight: 500; color: var(--mut); }
 .btn-home:hover, .btn-home:focus-visible { background: #653f14; color: #fff; }
 .fs-ctl { display: flex; gap: .3rem; }
 .fs-ctl .btn { font-size: 1.05rem; padding: 0 .7rem; }
@@ -145,6 +146,30 @@ a { color: #1d4ed8; }
   padding: .3rem 1.1rem 1rem;
 }
 .ov h3 { margin-top: .9rem; }
+.ov section.wide { grid-column: 1 / -1; }
+/* 組合圖：用會自動摺行嘅格子，唔用固定版面嘅 SVG。
+   一個矩陣五格橫排，喺手機一定要碌左右；摺行就唔使。
+   目標字喺兩條軸各出現一次（cc-self 橙色），「同時屬於兩個家族」睇得清楚。 */
+.combo { margin: .7rem 0 .3rem; }
+.cax { margin-bottom: .9rem; }
+.cax-t { font-size: .85rem; font-weight: 700; margin-bottom: .35rem; }
+.cax-form .cax-t { color: #1d4ed8; }
+.cax-sound .cax-t { color: #047857; }
+.cax-down .cax-t { color: #7c3aed; }
+.cax-r { display: grid; gap: .45rem; grid-template-columns: repeat(auto-fill, minmax(min(6rem, 30%), 1fr)); }
+.cc { border: 2px solid; border-radius: .6rem; padding: .4rem .3rem .5rem; text-align: center; }
+.cc-form { background: #eff6ff; border-color: #bfdbfe; }
+.cc-sound { background: #ecfdf5; border-color: #a7f3d0; }
+.cc-down { background: #faf5ff; border-color: #ddd6fe; }
+.cc-self { background: #fff7ed !important; border-color: #c2410c !important; border-width: 3px; }
+.cc-ch { display: block; font-size: 2rem; line-height: 1.2; font-weight: 700; }
+.cc-mk { display: block; font-size: .76rem; }
+.cc-form .cc-mk { color: #1d4ed8; }
+.cc-sound .cc-mk { color: #047857; }
+.cc-down .cc-mk { color: #7c3aed; }
+.cc-self .cc-mk { color: #c2410c; }
+.cc-gl { display: block; font-size: .74rem; color: var(--mut); line-height: 1.35; }
+.cnote { font-size: .85rem; color: var(--mut); margin: .2rem 0 0; }
 .ov ul { padding-left: 1.2rem; margin: .4rem 0 0; }
 .ov li { margin: .55rem 0; }
 
