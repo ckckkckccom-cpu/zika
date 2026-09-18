@@ -238,10 +238,28 @@ python3 build_pdf.py --each pdf          # 每隻字一份 → pdf/<字>.pdf
 python3 check_pdf.py 字卡.pdf pdf/*.pdf  # 驗證每份 PDF 真係有中文
 python3 check_site.py --shots shots      # 用瀏覽器逐頁檢查 + 影相
 python3 check_yuanwen.py <字>.md         # 改過文字之後，驗【原文】冇被改
+python3 archive_card.py 靜               # 升格式之前，封存返現有版本
+python3 archive_card.py --list           # 睇下封存咗啲咩
 python3 cardfmt.py                       # 淨係驗格式
 python3 netgraph.py 靜 > /tmp/a.svg      # 淨係出推理網絡圖，方便逐幅執
 python3 combograph.py 財                 # 淨係出組合圖
 ```
+
+### 版本封存（用戶要求：已出版嘅唔好刪）
+
+```
+archive/<字>_v<N>.pdf     已出版過嘅舊版，永久保留，唔覆蓋
+pdf/<字>.pdf              最新版
+```
+
+- **版本號 ＝ 格式版本**（v1 結構＋意思／v2 再加同音層同交叉核對／
+  v3 再加推理網絡、總覽、組合、做部件時）。**唔係每次改字都封存** ——
+  咁樣 repo 會爆，而且大部分改動唔值得留一版。
+- **升級格式之前一定要先跑 `python3 archive_card.py <字>`**，
+  否則舊版 PDF 會俾新版蓋過。跑咗之後先改 .md。
+- `archive_card.py` **唔會覆蓋已經存在嘅檔** —— 已出版嘅嘢唔應該改。
+- 網站每張卡底部會自動列出該字嘅所有舊版連結，師傅都㩒得到。
+- CI 嗰句 `rm -rf pdf` **只清 pdf/，唔好掂 archive/**。
 
 **網站係主要成果**，PDF 係副產品（方便列印同傳送）。兩種 PDF 都要出：
 `字卡.pdf` 係合訂本，`pdf/<字>.pdf` 係每隻字一份。兩樣都 commit 入 repo。

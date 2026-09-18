@@ -30,9 +30,10 @@ import urllib.parse
 
 from markdown_it import MarkdownIt
 
+import archive_card
 import cardfmt
-import fontkit
 import combograph
+import fontkit
 import netgraph
 import ui_strings
 
@@ -368,10 +369,23 @@ def card_page(md, card, prev, nxt):
             overview_html(md, card, root),
             detail_html(md, card, root)]
     pdf = os.path.join(ROOT, 'pdf', '%s.pdf' % card.ch)
+    links = []
     if os.path.exists(pdf):
-        body.append('<p class="cards-nav no-print"><a class="btn" href="%spdf/%s.pdf">'
-                    '下載「%s」的 PDF</a></p>'
-                    % (root, urllib.parse.quote(card.ch), esc(card.ch)))
+        links.append('<a class="btn" href="%spdf/%s.pdf">下載「%s」的 PDF（v%d・最新）</a>'
+                     % (root, urllib.parse.quote(card.ch), esc(card.ch),
+                        card.format_version))
+    # 只列比現版舊嘅。封存檔可能同現版同號（做緊安全快照），
+    # 咁樣喺頁面上會變成「v2 最新」隔籬又有個「舊版 v2」，睇落好怪。
+    old = [(v, f) for v, f in archive_card.listing().get(card.ch, [])
+           if v < card.format_version]
+    for ver, fn in old:
+        links.append('<a class="btn btn-old" href="%sarchive/%s">舊版 v%d</a>'
+                     % (root, urllib.parse.quote(fn), ver))
+    if links:
+        body.append('<p class="cards-nav no-print">%s</p>' % ''.join(links))
+    if old:
+        body.append('<p class="hint no-print">%s</p>'
+                    % '舊版是已出版過的版本，保留不刪，內容停留在當時的狀態。')
     body.append('</main>')
     body.append(tail(root))
     return '\n'.join(body)
@@ -461,6 +475,10 @@ def copy_static():
     book = os.path.join(ROOT, '字卡.pdf')
     if os.path.exists(book):
         shutil.copy2(book, os.path.join(dest, '字卡.pdf'))
+    # 已出版嘅舊版唔刪，集中放喺 archive/，網站每張卡底部連得返出去
+    src_a = os.path.join(ROOT, 'archive')
+    if os.path.isdir(src_a):
+        shutil.copytree(src_a, os.path.join(SITE, 'archive'), dirs_exist_ok=True)
 
 
 def write_qr():

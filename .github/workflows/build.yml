@@ -21,6 +21,7 @@ on:
       - 'assets/**'
       - '*.py'
       - 'requirements.txt'
+      - 'archive/**'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -73,6 +74,7 @@ jobs:
 
       - name: 砌每隻字一份 PDF
         # 舊嘅字卡刪咗之後個 PDF 唔會自己消失，所以先清空再砌返。
+        # ⚠️ 只清 pdf/，**唔好掂 archive/** —— 嗰度係已出版嘅舊版，永久保留。
         run: |
           rm -rf pdf
           python build_pdf.py --each pdf
@@ -109,7 +111,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f --all 字卡.pdf pdf
+          git add -f --all 字卡.pdf pdf archive
           if git diff --staged --quiet; then
             echo "PDF 冇變，唔使 commit"
           else
@@ -125,6 +127,7 @@ jobs:
           path: |
             字卡.pdf
             pdf/
+            archive/
           retention-days: 90
 
   deploy:

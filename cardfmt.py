@@ -65,6 +65,23 @@ class Card:
         return bool(self.meta)
 
     @property
+    def format_version(self):
+        """呢張卡係邊個格式版本。
+
+        v3 喺 front matter 寫明。舊卡冇 front matter，靠有冇同音層／
+        交叉核對去判斷：有＝v2，冇＝v1。
+        版本封存（archive/<字>_v<N>.pdf）就係按呢個號碼。
+        """
+        if self.meta and self.meta.get('format'):
+            try:
+                return int(self.meta['format'])
+            except (TypeError, ValueError):
+                pass
+        _, _, detail = split_body(self.body)
+        body = detail or self.body
+        return 2 if (section_text(body, '3.1') or section_text(body, '4.4')) else 1
+
+    @property
     def jyutping(self):
         """回傳讀音 list。舊卡由 0 節個表撈返出嚟。"""
         if self.meta and self.meta.get('jyutping'):

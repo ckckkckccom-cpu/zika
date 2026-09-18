@@ -60,6 +60,7 @@ body {
 .btn:hover, .btn:focus-visible { border-color: var(--accent); background: var(--accent-soft); }
 .btn[aria-disabled="true"] { opacity: .35; pointer-events: none; }
 .btn-home { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-old { font-weight: 500; color: var(--mut); }
 .btn-home:hover, .btn-home:focus-visible { background: #653f14; color: #fff; }
 .fs-ctl { display: flex; gap: .3rem; }
 .fs-ctl .btn { font-size: 1.05rem; padding: 0 .7rem; }
