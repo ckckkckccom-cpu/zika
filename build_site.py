@@ -275,6 +275,30 @@ def strip_html(ch, root):
             % (ui_strings.SEC_EVOLUTION, ''.join(items), ui_strings.IMG_HINT))
 
 
+# 頂部密集資料格嘅排序。最常用嘅放前面，其餘按卡入面原本次序跟落去。
+# （仿漢典：大字下面即刻一條密集資料，唔使捲落去搵。）
+INFO_ORDER = ['粵音', '國音', '部首', '部首外筆畫', '總筆畫', 'Unicode',
+              '倉頡碼', '中古音', '上古音', '異體字']
+_TAGS = re.compile(r'<[^>]+>')
+
+
+def info_html(md, card, root):
+    """大字下面嗰條密集資料格。"""
+    rows = cardfmt.basic_rows(card)
+    if not rows:
+        return ''
+    rank = {k: i for i, k in enumerate(INFO_ORDER)}
+    rows = sorted(rows, key=lambda r: rank.get(r[0], len(INFO_ORDER)))
+    cells = []
+    for label, val in rows:
+        html = badges(md.renderInline(val, {'ch': card.ch, 'root': root}))
+        plain = _TAGS.sub('', html)
+        wide = ' wide' if len(plain) > 20 else ''
+        cells.append('<div class="ic%s"><span class="k">%s</span>'
+                     '<span class="v">%s</span></div>' % (wide, esc(label), html))
+    return '<div class="info">%s</div>' % ''.join(cells)
+
+
 _OV_BLOCK = re.compile(r'^###\s*(\S+)\s*$(.*?)(?=^###\s|\Z)', re.M | re.S)
 
 
@@ -332,6 +356,7 @@ def card_page(md, card, prev, nxt):
             topbar(root, prev, nxt),
             '<main>',
             hero_html(card, root, heading=True),
+            info_html(md, card, root),
             net_html(card),
             strip_html(card.ch, root),
             overview_html(md, card, root),
@@ -399,6 +424,7 @@ def all_page(md, cards):
     for c in cards:
         body += ['<section class="card-all">',
                  hero_html(c, root),
+                 info_html(md, c, root),
                  net_html(c),
                  strip_html(c.ch, root),
                  overview_html(md, c, root),

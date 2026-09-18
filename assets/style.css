@@ -105,6 +105,26 @@ a { color: #1d4ed8; }
   background: var(--accent-soft); border-radius: .8rem; padding: .9rem 1.1rem;
 }
 
+/* ── 頂部密集資料格 ──
+   仿漢典：大字下面即刻見到部首、筆畫、Unicode、中古音…
+   細字、細格、細線，唔用大圓角方框，佔高度極少但資訊量大。 */
+.info {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(min(13rem, 100%), 1fr));
+  border: 1px solid var(--line); border-radius: .5rem; overflow: hidden;
+  background: var(--card); margin: 1rem 0 1.4rem;
+  /* dense：長格（中古音、異體字）獨佔一行之後會留空位，
+     dense 會叫後面嘅短格填返上去，唔會見到一格空白。 */
+  grid-auto-flow: dense;
+}
+.info .ic {
+  padding: .3rem .6rem; font-size: .8rem; line-height: 1.55;
+  border-right: 1px solid var(--line); border-bottom: 1px solid var(--line);
+}
+.info .ic.wide { grid-column: span 2; }
+.info .k { color: var(--mut); margin-right: .45em; }
+.info .v { font-weight: 600; }
+.info .v code { font-size: .95em; }
+
 /* ── 推理網絡 ── */
 .net {
   margin: 1.4rem 0; padding: .9rem;
@@ -210,6 +230,8 @@ footer.site a { color: var(--accent); }
   main { padding: .8rem .8rem 4rem; }
   .hero .glyph { font-size: 5rem; }
   .strip { grid-template-columns: repeat(3, 1fr); }
+  .info { grid-template-columns: repeat(2, 1fr); }
+  .info .ic.wide { grid-column: 1 / -1; }
   .strip img { height: 5.6rem; }
   h1 { font-size: 1.8rem; }
   h2 { font-size: 1.32rem; }
