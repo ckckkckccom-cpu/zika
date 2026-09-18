@@ -58,12 +58,14 @@ td img{max-height:70px}
 /* 幅圖好高。唔夾住高度嘅話，佢會頂到成頁都放唔落，
    結果彈去下一頁，第一頁得個大字同一句總結，中間一大片空白。 */
 .net{page-break-inside:avoid;border:none;padding:0;text-align:center}
-.net svg{max-width:150mm;max-height:182mm;width:auto;height:auto}
+.net svg{max-width:150mm;max-height:170mm;width:auto;height:auto}
+.info{grid-template-columns:repeat(4,1fr);page-break-inside:avoid;margin:.4rem 0 .6rem}
+.info .ic{font-size:7.5pt;padding:1.5px 4px;line-height:1.4}
 .ov{display:block}
 .ov section{page-break-inside:avoid;margin-bottom:.6rem}
 .hero{padding:0}
 .hero .glyph{font-size:36pt}
-.hero .verdict{padding:.5rem .8rem;margin-top:.4rem}
+.hero .verdict{padding:.35rem .8rem;margin-top:.3rem}
 h2{margin:1rem 0 .4rem;font-size:15pt}
 h3{margin:.8rem 0 .3rem}
 h1{page-break-before:always;font-size:24pt;margin-top:0}

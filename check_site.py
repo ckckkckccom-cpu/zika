@@ -53,6 +53,7 @@ PROBE = """() => {
     imgCount: document.images.length,
     svgCount: document.querySelectorAll('.net svg').length,
     details: document.querySelectorAll('details.deep').length,
+    infoCells: document.querySelectorAll('.info .ic').length,
   };
 }"""
 
@@ -117,13 +118,18 @@ def main():
                     problems.append('%s：console 有錯 —— %s' % (name, errors[0][:120]))
                 if rel.startswith('cards/') and r['details'] == 0:
                     problems.append('%s：冇「詳細考證」摺疊區' % name)
+                # 頂部資料格係由第 0 節嗰個表撈出嚟嘅。如果有人改咗嗰個表嘅
+                # 欄名或者格式，資料格會靜靜哋變空，唔會報錯。呢度捉佢。
+                if rel.startswith('cards/') and r['infoCells'] < 6:
+                    problems.append('%s：頂部基本資料格只有 %d 格，第 0 節嗰個表可能改咗格式'
+                                    % (name, r['infoCells']))
 
                 if shots:
                     out = os.path.join(
                         shots, '%s_%s.png' % (tag, rel.replace('/', '_')[:-5]))
                     page.screenshot(path=out, full_page=True)
-                print('   %-28s 字級 %.0fpx  圖 %2d  網絡圖 %d  %s'
-                      % (name, r['fs'], r['imgCount'], r['svgCount'],
+                print('   %-28s 字級 %.0fpx  資料格 %2d  圖 %2d  網絡圖 %d  %s'
+                      % (name, r['fs'], r['infoCells'], r['imgCount'], r['svgCount'],
                          '✓' if not problems or problems[-1][:len(name)] != name else '✗'))
             ctx.close()
 

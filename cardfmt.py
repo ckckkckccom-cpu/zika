@@ -144,6 +144,38 @@ def section_text(detail_md, ref):
     return rest[:nxt.start()] if nxt else rest
 
 
+def basic_rows(card):
+    """由第 0 節嗰個表撈出基本資料，回傳 [(項目, 內容 markdown)]。
+
+    俾網頁頂部嗰條密集資料格用（仿漢典嘅做法）。
+    有圖嘅行（楷書）唔要 —— 大字本身已經喺上面。
+    來源一欄都唔要 —— 頂部係速查，來源留喺詳細考證嗰個完整表。
+    """
+    _, _, detail = split_body(card.body)
+    sec = section_text(detail, '0') or section_text(card.body, '0')
+    rows, seen = [], set()
+    for line in sec.splitlines():
+        line = line.strip()
+        if not line.startswith('|'):
+            continue
+        cells = [c.strip() for c in line.strip('|').split('|')]
+        if len(cells) < 2:
+            continue
+        label = re.sub(r'[*`]', '', cells[0]).strip()
+        val = cells[1].strip()
+        if not label or not val or label == '項目':
+            continue
+        if set(label) <= set('-: '):          # 表格分隔行
+            continue
+        if '![' in val or '<img' in val:      # 字形圖
+            continue
+        if label in seen:
+            continue
+        seen.add(label)
+        rows.append((label, val))
+    return rows
+
+
 def marks_in(text):
     """嗰段文字用咗邊幾個標記。"""
     return {m for m in MARKS if '【%s】' % m in text}
