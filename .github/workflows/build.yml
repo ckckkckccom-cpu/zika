@@ -81,6 +81,11 @@ jobs:
         # 字型出事嘅話，PDF 會照出但中文全部消失。呢步係安全網。
         run: python check_pdf.py 字卡.pdf pdf/*.pdf
 
+      - name: 再砌一次網站
+        # 第一次砌嗰陣，新字卡嘅 PDF 仲未出，所以頁面上冇下載連結。
+        # 出完 PDF 再砌多次，連結同 site/pdf/ 就一定對得齊。
+        run: python build_site.py
+
       - name: 用瀏覽器逐頁檢查網站
         # 手機闊度同電腦闊度各行一次：字級、橫向溢出、字型、圖、console 錯。
         run: python check_site.py --shots shots
