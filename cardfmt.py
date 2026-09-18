@@ -287,6 +287,12 @@ def _combo_check(card):
         out.append('%s.md：冇「### 1.7 字族定位」—— 組合字要有呢個專章' % card.ch)
     if not section_text(detail, '1.8'):
         out.append('%s.md：冇「### 1.8 這個字做部件時」—— 每張卡都要有' % card.ch)
+    labels = {k for k, _ in basic_rows(card)}
+    if '部件組合' not in labels:
+        out.append('%s.md：第 0 節冇「部件組合」一行（IDS 分解式，例如 ⿰貝才）' % card.ch)
+    sec13 = section_text(detail, '1.3')
+    if sec13 and '字樣說明' not in sec13:
+        out.append('%s.md：1.3 冇引教育部「字樣說明」—— 拆法對照係重中之重' % card.ch)
     if not cb.get('downstream'):
         out.append('%s.md：combo 冇 downstream —— 呢隻字做部件時去咗邊，'
                    '一個都冇都要寫明 count: 0' % card.ch)
