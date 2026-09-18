@@ -309,12 +309,13 @@ def overview_html(md, card, root):
     blocks = _OV_BLOCK.findall(ov)
     if not blocks:
         return ''
-    combo = combograph.render_html(card)
+    pics = {'同族字': combograph.render_family_html(card),
+            '做部件時': combograph.render_downstream_html(card)}
     out = ['<h2>%s</h2>\n<div class="ov">' % ui_strings.SEC_OVERVIEW]
     for name, body in blocks:
-        # 「部件組合」嗰格會擺幅組合圖，所以要佔成行，唔可以擠喺半欄度
-        wide = ' class="wide"' if (name == '部件組合' and combo) else ''
-        pic = combo if wide else ''
+        # 呢兩格會擺圖，所以要佔成行，唔可以擠喺半欄度
+        pic = pics.get(name) or ''
+        wide = ' class="wide"' if pic else ''
         out.append('<section id="%s-ov-%s"%s><h3>%s</h3>%s%s</section>'
                    % (esc(card.ch), esc(name), wide, esc(name), pic,
                       render(md, body, card.ch, root)))

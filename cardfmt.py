@@ -42,7 +42,7 @@ H_DETAIL = '## 詳細考證'
 # 總覽五格。次序有意思：先出結果（字典點講、部件點解、引申到咩、
 # 同音字通到咩），最後「其他結果」放交叉核對同存疑。
 # 基本資料同完整考據一律排喺後面，唔好喺最前面阻住。
-OVERVIEW_BLOCKS = ('查字典的解釋', '不同部份結構解釋', '部件組合',
+OVERVIEW_BLOCKS = ('查字典的解釋', '不同部份結構解釋', '同族字', '做部件時',
                    '引申義', '同音字引申', '其他結果')
 
 # front matter 一定要喺檔案最頂。卡入面有好多 `---` 做分隔線，
@@ -284,7 +284,12 @@ def _combo_check(card):
                            % (card.ch, axis, i))
     _, _, detail = split_body(card.body)
     if not section_text(detail, '1.7'):
-        out.append('%s.md：冇「### 1.7 組合分析」—— 組合字要有呢個專章' % card.ch)
+        out.append('%s.md：冇「### 1.7 字族定位」—— 組合字要有呢個專章' % card.ch)
+    if not section_text(detail, '1.8'):
+        out.append('%s.md：冇「### 1.8 這個字做部件時」—— 每張卡都要有' % card.ch)
+    if not cb.get('downstream'):
+        out.append('%s.md：combo 冇 downstream —— 呢隻字做部件時去咗邊，'
+                   '一個都冇都要寫明 count: 0' % card.ch)
     return out
 
 

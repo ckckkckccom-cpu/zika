@@ -39,7 +39,7 @@ def _axis(title, cells, kind):
             '<div class="cax-r">%s</div></div>' % (kind, esc(title), ''.join(cells)))
 
 
-def render_html(card):
+def render_family_html(card):
     """一張卡 → 組合圖 HTML。冇 combo 資料就回 None。"""
     cb = (card.meta or {}).get('combo')
     if not cb or cb.get('layout') == '獨體':
@@ -75,7 +75,7 @@ def main():
     if len(sys.argv) < 2:
         sys.exit('用法：python3 combograph.py <字>')
     card = cardfmt.parse_card(os.path.join(root, sys.argv[1] + '.md'))
-    html = render_html(card)
+    html = render_family_html(card)
     if not html:
         sys.exit('%s 冇 combo 資料' % sys.argv[1])
     sys.stdout.write(html + '\n')
@@ -83,3 +83,31 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+def render_downstream_html(card):
+    """呢隻字自己做部件嗰陣，去咗邊啲字。
+
+    同 1.7 啱啱相反方向：1.7 問「佢企喺邊個家族」，呢度問「佢生出咗啲乜」。
+    一個字可以由極能產嘅部件造出嚟，自己卻係一個終點（例：財）。
+    呢個落差淨係睇成隻字係睇唔到嘅，要數過先知。
+    """
+    cb = (card.meta or {}).get('combo') or {}
+    ds = cb.get('downstream')
+    if not ds:
+        return None
+    items = [r for r in (ds.get('items') or []) if isinstance(r, dict)]
+    out = ['<div class="combo">']
+    n = ds.get('count', len(items))
+    title = '「%s」做部件，進入了 %s 個字' % (card.ch, n)
+    if not items:
+        out.append('<div class="cax cax-down"><div class="cax-t">%s</div></div>'
+                   % esc(title))
+    else:
+        cells = [_cell(r.get('char', ''), '%s＋%s' % (r.get('with', ''), card.ch),
+                       r.get('gloss', ''), 'down') for r in items]
+        out.append(_axis(title, cells, 'down'))
+    if ds.get('note'):
+        out.append('<p class="cnote">%s</p>' % esc(ds['note']))
+    out.append('</div>')
+    return ''.join(out)
