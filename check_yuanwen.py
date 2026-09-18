@@ -64,15 +64,24 @@ def git_show(base, path):
 
 
 def report(path, old, new, kind):
+    """回傳 1 代表真係有嘢被改／被刪，0 代表冇問題。
+
+    **淨係新增唔算失敗。** 加新章節（例如 1.7 組合分析引多幾條《說文》）
+    本來就會加引文；硬規矩係「已經有嘅引文一個字都唔可以變」，
+    唔係「唔准加」。所以只有 delete／replace 先算違規。
+    """
     a, b = old, new
     if a == b:
         return 0
-    print('\n✗ %s 嘅%s變咗：' % (path, kind))
-    sm = difflib.SequenceMatcher(None, a, b)
+    ops = difflib.SequenceMatcher(None, a, b).get_opcodes()
+    bad = [o for o in ops if o[0] in ('delete', 'replace')]
+    if not bad:
+        added = sum(j2 - j1 for tag, _, _, j1, j2 in ops if tag == 'insert')
+        print('✓ %s：原有%s一條都冇變，另外新增咗 %d 條' % (path, kind, added))
+        return 0
+    print('\n✗ %s 嘅%s被改咗或者刪咗：' % (path, kind))
     shown = 0
-    for tag, i1, i2, j1, j2 in sm.get_opcodes():
-        if tag == 'equal':
-            continue
+    for tag, i1, i2, j1, j2 in bad:
         for x in a[i1:i2]:
             print('   － %s' % x[:160])
             shown += 1

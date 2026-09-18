@@ -61,6 +61,9 @@ td img{max-height:70px}
 .net svg{max-width:150mm;max-height:170mm;width:auto;height:auto}
 .info{grid-template-columns:repeat(4,1fr);page-break-inside:avoid;margin:.4rem 0 .6rem}
 .info .ic{font-size:7.5pt;padding:1.5px 4px;line-height:1.4}
+.combo{page-break-inside:avoid}
+.cax-r{grid-template-columns:repeat(6,1fr)}
+.cc-ch{font-size:20pt}
 .ov{display:block}
 .ov section{page-break-inside:avoid;margin-bottom:.6rem}
 .hero{padding:0}

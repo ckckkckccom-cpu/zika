@@ -32,6 +32,7 @@ from markdown_it import MarkdownIt
 
 import cardfmt
 import fontkit
+import combograph
 import netgraph
 import ui_strings
 
@@ -308,10 +309,14 @@ def overview_html(md, card, root):
     blocks = _OV_BLOCK.findall(ov)
     if not blocks:
         return ''
+    combo = combograph.render_html(card)
     out = ['<h2>%s</h2>\n<div class="ov">' % ui_strings.SEC_OVERVIEW]
     for name, body in blocks:
-        out.append('<section id="%s-ov-%s"><h3>%s</h3>%s</section>'
-                   % (esc(card.ch), esc(name), esc(name),
+        # 「部件組合」嗰格會擺幅組合圖，所以要佔成行，唔可以擠喺半欄度
+        wide = ' class="wide"' if (name == '部件組合' and combo) else ''
+        pic = combo if wide else ''
+        out.append('<section id="%s-ov-%s"%s><h3>%s</h3>%s%s</section>'
+                   % (esc(card.ch), esc(name), wide, esc(name), pic,
                       render(md, body, card.ch, root)))
     out.append('</div>')
     return ''.join(out)

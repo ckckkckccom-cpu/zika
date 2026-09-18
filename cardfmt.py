@@ -42,7 +42,8 @@ H_DETAIL = '## 詳細考證'
 # 總覽五格。次序有意思：先出結果（字典點講、部件點解、引申到咩、
 # 同音字通到咩），最後「其他結果」放交叉核對同存疑。
 # 基本資料同完整考據一律排喺後面，唔好喺最前面阻住。
-OVERVIEW_BLOCKS = ('查字典的解釋', '不同部份結構解釋', '引申義', '同音字引申', '其他結果')
+OVERVIEW_BLOCKS = ('查字典的解釋', '不同部份結構解釋', '部件組合',
+                   '引申義', '同音字引申', '其他結果')
 
 # front matter 一定要喺檔案最頂。卡入面有好多 `---` 做分隔線，
 # 所以一定要用 \A 錨死開頭，唔可以任意搵。
@@ -248,7 +249,43 @@ def validate(card):
 
     warns += _honesty_check(card)
     warns += _overview_check(card)
+    warns += _combo_check(card)
     return errs, warns
+
+
+def _combo_check(card):
+    """組合字一定要有 combo 資料（組合圖同 1.7 專章靠佢）。
+
+    獨體字冇得組合，寫 combo: {layout: 獨體} 就當交代咗。
+    """
+    out = []
+    cb = (card.meta or {}).get('combo')
+    if cb is None:
+        out.append('%s.md：front matter 冇 combo —— 組合字一定要有，'
+                   '獨體字就寫 combo: {layout: 獨體}' % card.ch)
+        return out
+    if not isinstance(cb, dict):
+        out.append('%s.md：combo 要係一個 mapping' % card.ch)
+        return out
+    if cb.get('layout') == '獨體':
+        return out
+    for k in ('layout', 'form', 'sound'):
+        if not cb.get(k):
+            out.append('%s.md：combo 缺少 %s' % (card.ch, k))
+    for axis, name in (('same_form', '同形符'), ('same_sound', '同聲符')):
+        rows = cb.get(axis) or []
+        if not rows:
+            out.append('%s.md：combo 嘅 %s（%s）一個字都冇 —— '
+                       '真係一個都搵唔到嘅話，喺 note 講明' % (card.ch, axis, name))
+            continue
+        for i, r in enumerate(rows, 1):
+            if not isinstance(r, dict) or not r.get('char') or not r.get('with'):
+                out.append('%s.md：combo %s 第 %d 項要有 char 同 with'
+                           % (card.ch, axis, i))
+    _, _, detail = split_body(card.body)
+    if not section_text(detail, '1.7'):
+        out.append('%s.md：冇「### 1.7 組合分析」—— 組合字要有呢個專章' % card.ch)
+    return out
 
 
 def _honesty_check(card):
