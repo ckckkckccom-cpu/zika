@@ -9,7 +9,7 @@
  */
 
 :root {
-  --fs-base: 20px;
+  --fs-base: 17px;
   --bg: #fbfaf7;
   --card: #ffffff;
   --fg: #16181d;
@@ -119,7 +119,7 @@ a { color: #1d4ed8; }
 .hint { color: var(--mut); font-size: .88rem; text-align: center; margin: .3rem 0 0; }
 
 /* ── 總覽四格 ── */
-.ov { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr)); }
+.ov { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr)); }
 .ov section {
   background: var(--card); border: 2px solid var(--line); border-radius: 1rem;
   padding: .3rem 1.1rem 1rem;
@@ -129,13 +129,20 @@ a { color: #1d4ed8; }
 .ov li { margin: .55rem 0; }
 
 /* ── 字形演變圖帶 ── */
-.strip { display: flex; gap: .8rem; overflow-x: auto; padding: .4rem .2rem 1rem; }
-.strip figure { margin: 0; flex: 0 0 auto; text-align: center; }
-.strip img {
-  height: 9rem; width: auto; background: #fff;
-  border: 2px solid var(--line); border-radius: .6rem; padding: .3rem; cursor: zoom-in;
+/* 唔用橫向捲 —— 手機上要碌左碌右好難睇，而且容易漏睇最後幾期。
+   改為自動摺行，一眼掃得晒；想睇大就按落去放大。 */
+/* 固定欄數，唔用 auto-fill —— auto-fill 會按最大值去數，
+   結果手機得兩欄、電腦十欄，兩邊都唔理想。 */
+.strip {
+  display: grid; gap: .6rem; grid-template-columns: repeat(4, 1fr);
+  max-width: 36rem; margin: 0 auto; padding: .4rem 0 .8rem;
 }
-.strip figcaption { font-size: .85rem; color: var(--mut); margin-top: .3rem; }
+.strip figure { margin: 0; text-align: center; }
+.strip img {
+  height: 6.4rem; width: 100%; object-fit: contain; background: #fff;
+  border: 1.5px solid var(--line); border-radius: .5rem; padding: .2rem; cursor: zoom-in;
+}
+.strip figcaption { font-size: .74rem; line-height: 1.35; color: var(--mut); margin-top: .2rem; }
 
 /* ── 四個標記 ── */
 .mk {
@@ -202,6 +209,8 @@ footer.site a { color: var(--accent); }
   :root { --maxw: 100%; }
   main { padding: .8rem .8rem 4rem; }
   .hero .glyph { font-size: 5rem; }
+  .strip { grid-template-columns: repeat(3, 1fr); }
+  .strip img { height: 5.6rem; }
   h1 { font-size: 1.8rem; }
   h2 { font-size: 1.32rem; }
 
@@ -219,6 +228,25 @@ footer.site a { color: var(--accent); }
     font-weight: 700; font-size: .82rem; color: var(--mut);
   }
   table:not(.t-img) td:empty { display: none; }
+
+  /* 字形對照表同樣唔好橫向捲。整行變成一個三欄格子，
+     每格上面用 data-label 標返係邊一期／邊個部件。 */
+  .t-img { display: block; overflow: visible; white-space: normal; border: none; }
+  .t-img thead { display: none; }
+  /* tbody 要留返 block。tbody 同 tr 一齊做 grid 會變成格子套格子，
+     每個 tr 只佔三分之一闊，裡面啲 td 就會爆出去。 */
+  .t-img tbody { display: block; }
+  .t-img tr { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+  .t-img tr { margin-bottom: .6rem; }
+  .t-img td {
+    display: block; text-align: center; padding: .25rem;
+    border: 1.5px solid var(--line); border-radius: .5rem; background: var(--card);
+  }
+  .t-img td::before {
+    content: attr(data-label); display: block;
+    font-size: .72rem; line-height: 1.3; color: var(--mut);
+  }
+  .t-img td img { max-height: 4.6rem; }
 }
 
 /* ── 列印（PDF 由呢個網頁印出嚟）── */

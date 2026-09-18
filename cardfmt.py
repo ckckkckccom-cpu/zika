@@ -39,7 +39,10 @@ MARKS = EVIDENCE            # 四個標記同證據級別同名，唔係巧合
 
 H_OVERVIEW = '## 總覽'
 H_DETAIL = '## 詳細考證'
-OVERVIEW_BLOCKS = ('結構', '意思', '同音', '交叉核對')
+# 總覽五格。次序有意思：先出結果（字典點講、部件點解、引申到咩、
+# 同音字通到咩），最後「其他結果」放交叉核對同存疑。
+# 基本資料同完整考據一律排喺後面，唔好喺最前面阻住。
+OVERVIEW_BLOCKS = ('查字典的解釋', '不同部份結構解釋', '引申義', '同音字引申', '其他結果')
 
 # front matter 一定要喺檔案最頂。卡入面有好多 `---` 做分隔線，
 # 所以一定要用 \A 錨死開頭，唔可以任意搵。
@@ -274,8 +277,8 @@ def _overview_check(card):
     for m in re.finditer(r'^###\s*(\S+)\s*$(.*?)(?=^###\s|\Z)', ov, re.M | re.S):
         name, block = m.group(1), m.group(2)
         pts = len(re.findall(r'^\s*[-*]\s+\S', block, re.M))
-        if pts < 3:
-            out.append('%s.md：總覽「%s」只有 %d 點，建議 3 至 6 點'
+        if pts < 2:
+            out.append('%s.md：總覽「%s」只有 %d 點，建議 2 至 6 點'
                        % (card.ch, name, pts))
         elif pts > 6:
             out.append('%s.md：總覽「%s」有 %d 點，多過 6 點就唔算摘要'

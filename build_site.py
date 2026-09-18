@@ -218,7 +218,7 @@ def head(title, desc, root, extra=''):
 <link rel="stylesheet" href="%sassets/style.css">
 <script>/* 早啲套用字體大小，避免載入時跳一跳 */
 try{var _i=+localStorage.getItem('zika-fs')||0;
-document.documentElement.style.setProperty('--fs-base',['20px','24px','28px'][_i]||'20px');}catch(e){}</script>
+document.documentElement.style.setProperty('--fs-base',['17px','20px','24px','28px'][_i]||'17px');}catch(e){}</script>
 %s</head>
 <body>
 """ % (esc(title), esc(desc), root, root, extra)
