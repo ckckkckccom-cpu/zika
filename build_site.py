@@ -277,6 +277,62 @@ def strip_html(ch, root):
             % (ui_strings.SEC_EVOLUTION, ''.join(items), ui_strings.IMG_HINT))
 
 
+CHARLIST_TSV = os.path.join(ROOT, '字庫.tsv')
+
+
+def read_charlist():
+    """讀 charlist.py 出嘅 字庫.tsv。搵唔到就回空 list（首頁嗰截自動唔顯示）。"""
+    if not os.path.exists(CHARLIST_TSV):
+        return []
+    lines = [l for l in open(CHARLIST_TSV, encoding='utf-8').read().splitlines()
+             if l and not l.startswith('#')]
+    if len(lines) < 2:
+        return []
+    header = lines[0].split('\t')
+    return [dict(zip(header, l.split('\t'))) for l in lines[1:]]
+
+
+def charlist_html(md, root):
+    """首頁「字庫進度」：姓名用字候選清單，同 charlist.py 出嘅 字庫.tsv 同步。
+
+    分兩截：一個永遠見到嘅分層摘要，同一個摺埋嘅全表（119 個字打橫睇太長，
+    唔應該一開波就佔晒個首頁）。已做嘅字連返去對應字卡。
+    """
+    rows = read_charlist()
+    if not rows:
+        return ''
+
+    by_tier = {}
+    for r in rows:
+        by_tier.setdefault(r['分層'], []).append(r)
+
+    sum_lines = ['| 分層 | 已做 | 總數 |', '|---|---|---|']
+    for tier in sorted(by_tier):
+        rs = by_tier[tier]
+        done = sum(1 for r in rs if r['狀態'] == '已做')
+        sum_lines.append('| %s | %d | %d |' % (tier, done, len(rs)))
+    total_done = sum(1 for r in rows if r['狀態'] == '已做')
+    summary = render(md, '\n'.join(sum_lines), '', root)
+
+    full_lines = ['| 字 | 分層 | 狀態 | 出現於 |', '|---|---|---|---|']
+    for r in rows:
+        ch = r['字']
+        cell = '[%s](%s.md)' % (ch, ch) if r['狀態'] == '已做' else ch
+        status = ('已做（v%s）' % r['版本']) if r['狀態'] == '已做' else '未做'
+        full_lines.append('| %s | %s | %s | %s |'
+                          % (cell, r['分層'], status, r['出現於']))
+    full_table = render(md, '\n'.join(full_lines), '', root)
+
+    return ('<h2>%s</h2>\n<p>%s</p>\n%s\n'
+            '<details class="deep"><summary>%s</summary>'
+            '<div class="deep-body">%s</div></details>\n'
+            % (ui_strings.SEC_CHARLIST,
+               ui_strings.CHARLIST_NOTE % (total_done, len(rows)),
+               summary,
+               ui_strings.CHARLIST_FULL % len(rows),
+               full_table))
+
+
 # 頂部密集資料格嘅排序。最常用嘅放前面，其餘按卡入面原本次序跟落去。
 # （仿漢典：大字下面即刻一條密集資料，唔使捲落去搵。）
 INFO_ORDER = ['粵音', '國音', '部首', '部首外筆畫', '總筆畫', 'Unicode',
@@ -391,7 +447,7 @@ def card_page(md, card, prev, nxt):
     return '\n'.join(body)
 
 
-def index_page(cards):
+def index_page(md, cards):
     root = ''
     tiles = []
     for c in cards:
@@ -423,6 +479,7 @@ def index_page(cards):
             else '<p>%s</p>' % ui_strings.NO_CARDS,
             '<h2>%s</h2><ol>%s</ol>' % (ui_strings.SEC_HOWTO, howto),
             '<h2>%s</h2><div class="legend">%s</div>' % (ui_strings.SEC_LEGEND, legend),
+            charlist_html(md, root),
             '<h2>%s</h2><p>%s</p><p class="cards-nav">%s</p>'
             % (ui_strings.SEC_PDF, ui_strings.PDF_NOTE, ''.join(pdfs)),
             '<h2>%s</h2><p>%s</p><p>%s</p>'
@@ -578,7 +635,7 @@ def main():
               card_page(md, c, prev, nxt))
 
     print('\n── 首頁同合訂本 ──')
-    write(os.path.join(SITE, 'index.html'), index_page(cards))
+    write(os.path.join(SITE, 'index.html'), index_page(md, cards))
     write(os.path.join(SITE, 'all.html'), all_page(md, cards))
 
     print('\n── 連結檢查 ──')

@@ -35,6 +35,7 @@ SEC_HOWTO = '如何閱讀'
 SEC_LEGEND = '四個標記'
 SEC_CARDS = '字卡一覽'
 SEC_PDF = '下載 PDF'
+SEC_CHARLIST = '字庫進度'
 
 # ── 四個標記的解釋（首頁圖例用）──
 MARKS = [
@@ -56,6 +57,8 @@ HOWTO_STEPS = [
     '想看完整資料，按最底的「詳細考證」展開。',
 ]
 PDF_NOTE = '每隻字一份，另有合訂本。方便列印或傳送。'
+CHARLIST_NOTE = '姓名常用字候選清單，來自三地姓名排行同姓氏統計。目前已做 %d／%d 個字。'
+CHARLIST_FULL = '字庫全表（%d 字）'
 PDF_ALL = '合訂本（全部字）'
 ADD_HOME_TITLE = '加到手機主畫面'
 ADD_HOME_IOS = 'iPhone：在 Safari 按底部分享鍵，選「加至主畫面」。'
