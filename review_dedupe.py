@@ -26,6 +26,7 @@
   python3 review_dedupe.py --base main 靜.md
 """
 import collections
+import difflib
 import re
 import sys
 
@@ -110,6 +111,34 @@ def backrefs(body):
     return sorted({m.group(1) for m in BACKREF_RE.finditer(body) if m.group(1)})
 
 
+SIMILAR_ENOUGH = 0.75
+
+
+def lost_lines(old_lines, new_lines):
+    """分開「真係冇咗」同「改過但仲喺度」。
+
+    去重成日會喺原本嗰行後面加一句指回（「…（圖表見 1.4）」），
+    如果逐字比，呢種加字會被當做「成行消失」，同表格列嗰個問題一樣。
+    所以搵唔到一模一樣嘅時候，再搵下新版有冇一行同佢好似（≥85%）：
+    有就當「改過」（軟提示，要人睇下改成點），冇先當「真係冇咗」（紅色）。
+
+    回傳 (真係冇咗, [(舊行, 最相似嘅新行, 相似度)…])。
+    """
+    new_set = set(new_lines)
+    lost, edited = [], []
+    for line in set(old_lines) - new_set:
+        best, ratio = None, 0.0
+        for cand in new_lines:
+            r = difflib.SequenceMatcher(None, line, cand).ratio()
+            if r > ratio:
+                best, ratio = cand, r
+        if ratio >= SIMILAR_ENOUGH:
+            edited.append((line, best, ratio))
+        else:
+            lost.append(line)
+    return lost, edited
+
+
 def compare_one(ch, old_raw, new_raw):
     """回傳 (has_hard_issue: bool, report_lines: list[str])。"""
     lines = []
@@ -132,7 +161,7 @@ def compare_one(ch, old_raw, new_raw):
     missing_tr = set(old_tr) - set(new_tr)
 
     old_bl, new_bl = bullet_lines(old_body), bullet_lines(new_body)
-    missing_bl = set(old_bl) - set(new_bl)
+    missing_bl, edited_bl = lost_lines(old_bl, new_bl)
 
     old_h, new_h = headings(old_body), headings(new_body)
     missing_h = [h for h in old_h if h not in new_h]
@@ -140,7 +169,13 @@ def compare_one(ch, old_raw, new_raw):
     old_mk, new_mk = mark_counts(old_raw), mark_counts(new_raw)
     dropped_mk = {m: (old_mk[m], new_mk[m]) for m in MARKS if new_mk[m] < old_mk[m]}
 
-    old_img, new_img = len(IMAGE_RE.findall(old_body)), len(IMAGE_RE.findall(new_body))
+    # 圖片用「唯一圖檔」比，唔用總數：去重有時係將重覆咗嘅同一張圖表
+    # 由兩個章節減到一個，嗰張圖仍然喺卡入面——咁樣唔算少咗資料。
+    # 真正要捉嘅係「有張圖成張唔見咗」。
+    old_img_set = set(IMAGE_RE.findall(old_body))
+    new_img_set = set(IMAGE_RE.findall(new_body))
+    missing_img = old_img_set - new_img_set
+    old_img, new_img = len(old_img_set), len(new_img_set)
 
     old_s5, new_s5 = section_entries(old_detail, '5'), section_entries(new_detail, '5')
     missing_s5 = [x for x in old_s5 if x not in new_s5]
@@ -172,9 +207,11 @@ def compare_one(ch, old_raw, new_raw):
         lines.append('  ✗ (a) 四個標記嘅出現次數減少咗（去重應該淨係減引文重複，唔應該減標記）：')
         for m, (o, n) in dropped_mk.items():
             lines.append('       － 【%s】：%d → %d' % (m, o, n))
-    if new_img < old_img:
+    if missing_img:
         hard = True
-        lines.append('  ✗ (a) 圖片數由 %d 跌到 %d' % (old_img, new_img))
+        lines.append('  ✗ (a) 有 %d 張圖喺新版完全搵唔返：' % len(missing_img))
+        for im in sorted(missing_img):
+            lines.append('       － %s' % im[:100])
     if missing_s5:
         hard = True
         lines.append('  ✗ (a) §5 來源清單少咗 %d 項：' % len(missing_s5))
@@ -186,11 +223,18 @@ def compare_one(ch, old_raw, new_raw):
         for x in missing_s6:
             lines.append('       － %s' % x[:100])
     if not (missing_qs or missing_tr or missing_bl or missing_h or dropped_mk
-            or new_img < old_img or missing_s5 or missing_s6):
+            or missing_img or missing_s5 or missing_s6):
         lines.append('  ✓ (a) 冇單位完全消失：引文 %d 條唯一、表列 %d 條唯一、'
-                     '要點 %d 行唯一、標題 %d 個、圖 %d 張、§5 %d 項、§6 %d 項，全部仲喺度'
+                     '要點 %d 行唯一、標題 %d 個、唯一圖 %d 張、§5 %d 項、§6 %d 項，全部仲喺度'
                      % (len(set(new_qs)), len(set(new_tr)), len(set(new_bl)),
                         len(new_h), new_img, len(new_s5), len(new_s6)))
+
+    if edited_bl:
+        lines.append('  ！ (b) 有 %d 行改過（但仲喺度，≥%d%% 似）——R1 要睇下改成點：'
+                     % (len(edited_bl), int(SIMILAR_ENOUGH * 100)))
+        for old_l, new_l, r in edited_bl:
+            lines.append('       舊 %s' % old_l[:90])
+            lines.append('       新 %s   （%.0f%% 似）' % (new_l[:90], r * 100))
 
     # ── (b) 「見 §x.y」指返有冇嘢 —— 淺色警示，唔算 hard issue，R1 要人手覆核 ──
     refs = backrefs(new_body)
