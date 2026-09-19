@@ -42,10 +42,42 @@ html,body{background:#fff!important}
 #lb,dialog,.topbar,.fs-ctl,.hint,.no-print{display:none!important}
 main{max-width:none;padding:0}
 body{line-height:1.6}
-/* 螢幕上摺埋嘅詳細考證，紙本一定要攤開（open 由 JS 設，呢度淨係收起個掣） */
-details.deep{border-top:none;margin-top:1.2rem}
-details.deep>summary{display:none!important}
+/* 螢幕上摺埋嘅詳細考證，紙本一定要攤開（open 由 JS 設）。
+   **但個標題一定要留返**——呢個係紙本最重要嘅一條線。
+   網站上總覽係摘要、詳細考證要撳先開，讀者自然知道下面係展開版；
+   紙本攤平之後，如果連個分界都收埋，總覽同正文就變成前後相連嘅兩段正文，
+   讀者會覺得「第 16 頁又講一次第 3 頁講過嘅嘢」——
+   即係盲審報告講嘅「重覆感」真正來源。所以呢度反過嚟做：
+   唔單止唔收，仲要做成一條好明顯嘅分部線，並且另起一頁。 */
+details.deep{border-top:none;margin-top:0}
+details.deep>summary{
+  display:block!important;list-style:none;
+  page-break-before:always;break-before:page;
+  border-top:2.5pt solid #333;border-bottom:.8pt solid #333;
+  padding:7pt 0 6pt;margin:0 0 10pt;
+  font-size:16pt;font-weight:700;text-align:center;
+  background:none!important;color:#000!important;border-radius:0;
+}
+details.deep>summary::-webkit-details-marker{display:none}
+details.deep>summary::before{content:none!important}
+details.deep>summary .sub{
+  display:block;font-size:8.5pt;font-weight:400;margin-top:4pt;color:#444;opacity:1;
+}
 .deep-body{padding-top:0}
+/* 甲：0 節嗰個表同第 1 頁嘅密集資料格係同一批資料（格仔係由呢個表自動撈出嚟），
+   淨係多咗「來源」一欄。所以唔可以刪（刪咗就真係少咗來源），
+   但紙本上要壓密，唔好再用正文尺寸排多一次成頁。 */
+h2[id$="-sec-0"]+table{font-size:8pt}
+h2[id$="-sec-0"]+table th,h2[id$="-sec-0"]+table td{padding:1pt 3pt;line-height:1.3}
+h2[id$="-sec-0"]+table td img{max-height:34px}
+/* 丁：尾巴嗰兩節（來源清單、存疑／未驗證）內容係短句同網址，
+   但而家用正文尺寸一行一條咁排，兩節加埋佔成三四頁。壓密，一個字都唔使刪。 */
+h2[id$="-sec-5"]+table,h2[id$="-sec-6"]+table{font-size:8pt}
+h2[id$="-sec-5"]+table td,h2[id$="-sec-6"]+table td{padding:1pt 3pt;line-height:1.3}
+h2[id$="-sec-5"]~ul,h2[id$="-sec-6"]~ul,
+h2[id$="-sec-5"]~ol,h2[id$="-sec-6"]~ol{font-size:9pt;line-height:1.45}
+h2[id$="-sec-5"]~ul li,h2[id$="-sec-6"]~ul li,
+h2[id$="-sec-5"]~ol li,h2[id$="-sec-6"]~ol li{margin:.15rem 0}
 table{font-size:9.5pt;table-layout:fixed;width:100%!important;page-break-inside:auto}
 .t-img{display:table!important;overflow:visible!important;white-space:normal!important}
 th,td{padding:3px 5px;word-wrap:break-word;overflow-wrap:anywhere}
