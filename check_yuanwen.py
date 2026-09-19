@@ -12,6 +12,18 @@
   python3 check_yuanwen.py 偉.md              # 同 HEAD 比
   python3 check_yuanwen.py --base main *.md   # 同某個 branch 比
   python3 check_yuanwen.py --list 偉.md       # 淨係列出而家有咩引文
+  python3 check_yuanwen.py --dedupe 靜.md     # 去重版：見下面「--dedupe 係咩」
+
+--dedupe 係咩：
+  PDF presentation 去重（CLAUDE.md「同一引文超過一行只全抄一次」）要將
+  同一條【原文】引文第二次、第三次出現嘅位置，改做「（引文見 §2.1）」呢類
+  指回文字。呢種改法用**預設模式**驗會誤判 —— 因為預設模式逐條逐次序比
+  （list 比 list），刪走重複出現會即刻判定做「delete」。
+
+  --dedupe 改為比較**唯一引文集合**（set 比 set）：舊版有嘅唯一引文，
+  新版一定要原封不動仲喺度（一個字都唔可以變、唔可以完全消失）；
+  但同一條引文出現幾多次唔計較——3 次減到 1 次通過，1 次變 0 次（真係刪咗）
+  先算失敗。加新引文照樣冇問題。
 """
 import difflib
 import re
@@ -94,6 +106,27 @@ def report(path, old, new, kind):
     return 1
 
 
+def dedupe_report(path, old_qs, new_qs):
+    """--dedupe 版嘅 report()：比較唯一引文集合，唔理次序、唔理重複次數。
+
+    回傳 1 代表有唯一引文完全消失咗（真係刪咗嘢），0 代表冇問題。
+    """
+    old_set, new_set = set(old_qs), set(new_qs)
+    missing = old_set - new_set
+    if missing:
+        print('\n✗ %s（--dedupe）：呢啲【原文】引文喺新版一次都搵唔返：' % path)
+        for q in sorted(missing):
+            print('   － 「%s」' % q[:160])
+        return 1
+    added = len(new_set - old_set)
+    old_occurrences = len(old_qs)
+    new_occurrences = len(new_qs)
+    print('✓ %s（--dedupe）：%d 條唯一引文全部仲喺度（另加 %d 條新嘅）；'
+          '出現次數由 %d 減到 %d'
+          % (path, len(old_set), added, old_occurrences, new_occurrences))
+    return 0
+
+
 def main():
     args = sys.argv[1:]
     base = 'HEAD'
@@ -102,9 +135,10 @@ def main():
         base = args[i + 1]
         del args[i:i + 2]
     listing = '--list' in args
+    dedupe = '--dedupe' in args
     args = [a for a in args if not a.startswith('--')]
     if not args:
-        sys.exit('用法：python3 check_yuanwen.py [--base <ref>] <檔案.md>…')
+        sys.exit('用法：python3 check_yuanwen.py [--base <ref>] [--dedupe] <檔案.md>…')
 
     bad = 0
     for path in args:
@@ -125,6 +159,10 @@ def main():
         old_segs = segments(old_text)
         old_qs = quotes(old_segs)
 
+        if dedupe:
+            bad += dedupe_report(path, old_qs, new_qs)
+            continue
+
         # 引文本體係硬規矩，一個字都唔可以變
         bad += report(path, old_qs, new_qs, '引文（「…」）')
         # 段落文字可以有少少差別（例如標點統一），淨係出警告
@@ -135,7 +173,8 @@ def main():
             print('✓ %s：%d 條【原文】引文完全一致' % (path, len(new_qs)))
 
     if bad:
-        print('\n有 %d 個檔嘅【原文】引文被改咗。呢個係硬規矩，要改返。' % bad)
+        what = '有唯一引文喺去重時被刪咗' if dedupe else '嘅【原文】引文被改咗'
+        print('\n有 %d 個檔%s。呢個係硬規矩，要改返。' % (bad, what))
         sys.exit(1)
 
 
