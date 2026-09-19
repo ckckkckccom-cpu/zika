@@ -47,6 +47,23 @@ def render_family_html(card):
     form = cb.get('form') or {}
     sound = cb.get('sound') or {}
     fp, sp = form.get('part', ''), sound.get('part', '')
+    # 會意字冇聲符，唔可以套形聲嗰兩條軸嘅講法。
+    # kind 預設係形聲；寫咗第二樣就改用「上半／下半」呢類中性講法。
+    kind = cb.get('kind', '形聲')
+    if kind == '形聲':
+        t_form = '同形符「%s」，換聲符' % fp
+        t_sound = '同聲符「%s」，換形符' % sp
+    else:
+        pos = cb.get('layout', '')
+        a, b = ('上半', '下半') if pos.startswith('上下') else ('左半', '右半')
+        if pos not in ('上下', '左右'):
+            a, b = ('第一件', '第二件') if pos not in ('上下', '左右') else (a, b)
+        if pos == '上下':
+            a, b = '上半', '下半'
+        elif pos == '左右':
+            a, b = '左半', '右半'
+        t_form = '同%s「%s」，換%s' % (a, fp, b)
+        t_sound = '同%s「%s」，換%s' % (b, sp, a)
     self_mk = '%s＋%s' % (fp, sp)
 
     row = [_cell(card.ch, self_mk, cb.get('gloss', ''), 'form', True)]
@@ -61,8 +78,8 @@ def render_family_html(card):
                              r.get('gloss', ''), 'sound'))
 
     out = ['<div class="combo">']
-    out.append(_axis('同形符「%s」，換聲符' % fp, row, 'form'))
-    out.append(_axis('同聲符「%s」，換形符' % sp, col, 'sound'))
+    out.append(_axis(t_form, row, 'form'))
+    out.append(_axis(t_sound, col, 'sound'))
     if cb.get('note'):
         out.append('<p class="cnote">%s</p>' % esc(cb['note']))
     out.append('</div>')
